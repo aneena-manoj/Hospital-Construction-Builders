@@ -41,10 +41,7 @@ if ceo_image_path:
     ceo_mime = "image/png" if str(ceo_image_path).lower().endswith(".png") else "image/jpeg"
     parts.append(image_to_part(ceo_image_path, mime=ceo_mime))
 
-# Logo (to be composited into output)
-if logo_image_path:
-    logo_mime = "image/png" if str(logo_image_path).lower().endswith(".png") else "image/jpeg"
-    parts.append(image_to_part(logo_image_path, mime=logo_mime))
+# Logo will be added after generation, not sent to AI model
 
 # Optional background/scene reference
 if background_image_path:
@@ -77,8 +74,7 @@ CRITICAL REQUIREMENTS:
 2) Format: The output image MUST be perfectly SQUARE (1:1 ratio). Same width and height.
    Not portrait, not landscape - SQUARE only.
 
-3) Brand: Place the uploaded SE Builders logo cleanly in the top-right corner with ample padding.
-   Keep the logo crisp, undistorted, and clearly visible.
+3) Brand: Leave space in the top-right corner for logo placement (we'll add it separately).
 
 4) Scene: Modern healthcare facility under construction with tower cranes in the background.
    Add subtle festive touches: light snow, string lights, small ornaments, evergreen accents.
@@ -87,6 +83,8 @@ CRITICAL REQUIREMENTS:
 5) Text Overlay:
    Headline: "Merry Christmas & Happy Holidays from SE Builders!"
    Subtext: "Building spaces where care and community can thrive."
+
+   CRITICAL: Spell these texts EXACTLY as written above. Double check spelling before rendering.
 
 6) Style: Cinematic, premium, professional. Navy + white base colors with red/green/gold
    holiday accents. Clean layout, balanced composition, and legible typography optimized
@@ -105,7 +103,33 @@ if response and response.candidates:
             image_parts.append(p.inline_data.data)
 
 if image_parts:
+    # Load the generated image
     out = Image.open(io.BytesIO(image_parts[0]))
+
+    # Overlay the logo in the top-right corner
+    if logo_image_path.exists():
+        logo = Image.open(logo_image_path)
+
+        # Calculate logo size (make it about 15% of image width)
+        img_width, img_height = out.size
+        logo_width = int(img_width * 0.15)
+        logo_aspect = logo.height / logo.width
+        logo_height = int(logo_width * logo_aspect)
+
+        # Resize logo
+        logo_resized = logo.resize((logo_width, logo_height), Image.Resampling.LANCZOS)
+
+        # Position in top-right with padding
+        padding = int(img_width * 0.03)  # 3% padding
+        x = img_width - logo_width - padding
+        y = padding
+
+        # Paste with transparency if logo has alpha channel
+        if logo_resized.mode == 'RGBA':
+            out.paste(logo_resized, (x, y), logo_resized)
+        else:
+            out.paste(logo_resized, (x, y))
+
     out.save("se_builders_christmas_instagram.png")
     out.show()  # Opens the image for preview
     print("Saved: se_builders_christmas_instagram.png")
