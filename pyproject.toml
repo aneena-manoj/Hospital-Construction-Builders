@@ -9,4 +9,5 @@ dependencies = [
     "google-generativeai>=0.3.0",
     "pillow>=10.0.0",
     "streamlit>=1.28.0",
+    "hubspot-api-client==8.0.0",
 ]
